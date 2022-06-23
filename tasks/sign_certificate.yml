@@ -1,0 +1,54 @@
+---
+- name: Create private key for new certificate
+  community.crypto.openssl_privatekey:
+    path: '{{ certificate_key_path }}'
+  # delegate_to: server_1
+  run_once: true
+
+- name: Create certificate signing request (CSR) for new certificate
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: '{{ certificate_key_path }}'
+    subject_alt_name:
+      - "DNS:ansible.com"
+      - "DNS:www.ansible.com"
+      - "DNS:docs.ansible.com"
+  # delegate_to: server_1
+  run_once: true
+  register: csr
+
+- name: Check whether certificate exists
+  stat:
+    path: '{{ certificate_path }}'
+  # delegate_to: server_1
+  run_once: true
+  register: certificate_exists
+
+- name: Read existing certificate if exists
+  slurp:
+    src: '{{ certificate_path }}'
+  when: certificate_exists.stat.exists
+  # delegate_to: server_1
+  run_once: true
+  register: certificate
+
+- name: Sign certificate with our CA
+  community.crypto.x509_certificate_pipe:
+    content: "{{ (certificate.content | b64decode) if certificate_exists.stat.exists else omit }}"
+    csr_content: "{{ csr.csr }}"
+    provider: ownca
+    ownca_path: '{{ ca_certificate_path }}'
+    ownca_privatekey_path: '{{ ca_certificate_key_path }}'
+    ownca_privatekey_passphrase: "{{ ca_certificate_key_passphrase }}"
+    ownca_not_after: +365d  # valid for one year
+    ownca_not_before: "-1d"  # valid since yesterday
+  # delegate_to: server_2
+  run_once: true
+  register: certificate
+
+- name: Write certificate file if changed
+  copy:
+    dest: '{{ certificate_path }}'
+    content: "{{ certificate.certificate }}"
+  # delegate_to: server_1
+  run_once: true
+  when: certificate is changed

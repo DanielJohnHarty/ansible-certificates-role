@@ -1,0 +1,68 @@
+---
+- name: Ensure /etc/ssl dir exists and root only access
+  file:
+    path: '{{ ssl_dir }}'
+    state: directory
+    owner: root
+    mode: 0700
+
+# Create CA
+- name: Create private key (RSA, 4096 bits)
+  community.crypto.openssl_privatekey:
+    path: '{{ ca_certificate_key_path }}'
+    passphrase: "{{ ca_certificate_key_passphrase }}"
+
+- name: Create certificate signing request (CSR) for CA certificate
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: '{{ ca_certificate_key_path }}'
+    privatekey_passphrase: "{{ ca_certificate_key_passphrase }}"
+    common_name: Ansible CA
+    use_common_name_for_san: false  # since we do not specify SANs, don't use CN as a SAN
+    basic_constraints:
+      - 'CA:TRUE'
+    basic_constraints_critical: yes
+    key_usage:
+      - keyCertSign
+    key_usage_critical: true
+  register: ca_csr
+
+- name: Create self-signed CA certificate from CSR
+  community.crypto.x509_certificate:
+    path: '{{ ca_certificate_path }}'
+    csr_content: "{{ ca_csr.csr }}"
+    privatekey_path: '{{ ca_certificate_key_path }}'
+    privatekey_passphrase: "{{ ca_certificate_key_passphrase }}"
+    provider: selfsigned
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+- name: Create simple self-signed certificate
+  community.crypto.x509_certificate:
+    path: '{{ certificate_path }}'
+    privatekey_path: '{{ certificate_key_path }}'
+    csr_content: '{{ csr.csr }}'
+    provider: selfsigned
+    passphrase: '{{ secret_ca_passphrase }}'
+
+
+
+
+
+    Obtain SSL certificates
+    Convert SSL keys to PKCS12 format
+    Convert PKCS12 to JKS format
+    Add JKS to Jenkins path
+    Configure Jenkins startup to use the JKS file.
+    Validate Jenkins SSL
