@@ -1,4 +1,4 @@
-# ansible-create-ca
+# ansible-certificates-role
 
 Create a certification authority and create/distribute certificates
 
