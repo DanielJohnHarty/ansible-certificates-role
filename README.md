@@ -24,5 +24,5 @@ Create a certification authority and create/distribute certificates
         - worker-03
   tasks:
     - import_role:
-        name: roles/ansible-ca
+        name: roles/ansible-certificates-role
 ```
