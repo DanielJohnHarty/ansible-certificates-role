@@ -1,0 +1,29 @@
+---
+- name: Check /etc/ssl/certs dir exists
+  stat:
+    path: /etc/ssl/certs
+  register: cacert_dir
+
+- name: Create certs dir if missing
+  file: 
+    path: /etc/ssl/certs
+    state: directory
+  when: not cacert_dir.stat.exists
+
+- name: Distribute CA to nodes
+  copy:
+    src: './files/certs/{{ ca_cert_filename }}'
+    dest: '{{ cert_dir }}/{{ ca_cert_filename }}'
+    backup: yes
+
+- name: Distribute keys to hosts
+  copy:
+    src: './files/certs/{{ item }}.key'
+    dest: /etc/ssl/certs/{{ item }}.key
+    backup: yes
+
+- name: Distribute certs to hosts
+  copy:
+    src: './files/certs/{{ item }}.pem'
+    dest: /etc/ssl/certs/{{ item }}.pem
+    backup: yes

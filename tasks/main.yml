@@ -1,0 +1,8 @@
+---
+- include_tasks: create-ca.yml
+
+- include_tasks: create-cert.yml
+  with_items: "{{ certs_fqdns  | list }}"
+
+- include_tasks: deploy-certs-to-hosts.yml
+  with_items: "{{ certs_fqdns  | list }}"
